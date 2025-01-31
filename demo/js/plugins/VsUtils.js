@@ -1,7 +1,7 @@
 // #region RPG Maker MZ --------------------------------------------------------------------------
 /*:
  * @target MZ
- * @plugindesc Version 1.0.0 VsUtils, helper methods and other utilities
+ * @plugindesc Version 1.1.1 VsUtils, helper methods and other utilities
  * @author VsRpgDev
  * @url https://github.com/vsrpgdev/VsUtils
  * @help 
@@ -21,7 +21,7 @@
     static get PluginName () {return pluginName}
     
     /**  @type {[number,number,number]} */
-    static get Version () {return [1,1, 0]}
+    static get Version () {return [1,1, 1]}
 
     /**
      * 
@@ -43,7 +43,15 @@
         return data;
       }
       catch{
-        return Vs.Utils.convertEscapeCharacters(json);
+        let result = Vs.Utils.convertEscapeCharacters(json);
+        try
+        {
+          return JSON.parse(result);
+        }
+        catch
+        {
+          return result
+        }
       }
     }
 

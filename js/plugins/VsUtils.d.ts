@@ -26,10 +26,12 @@ namespace Vs
 
       /**
        * 
+       * @param classType 
        * @param plugin param 
+       * @param nullable 
        * @returns param as json object
        */ 
-      static pluginParameterToObject<T>(classType?: new () => T, param: any) : T
+      static pluginParameterToObject<T>(classType?: new () => T, param: any, nullable?: boolean) : T
 
       /**
        * Creates a proxy for a single instance, ensuring it is of the specified class type.

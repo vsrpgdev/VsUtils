@@ -21,7 +21,7 @@
     static get PluginName () {return pluginName}
     
     /**  @type {[number,number,number]} */
-    static get Version () {return [1,0,0]}
+    static get Version () {return [1,1, 0]}
 
     /**
      * 
@@ -86,9 +86,19 @@
       return instance;
     }
 
-    static pluginParameterToObject(classType, param)
+    static pluginParameterToObject(classType, param, nullable)
     {
+      if (nullable == undefined) nullable = false;
+
       let instance = classType ? new classType() : {};
+      
+      if (param == null)
+      {
+        if (nullable)
+          return null;
+        else
+          param = {};
+      }
 
       return Object.entries(param).reduce((p,c,i,a) => {
         if (p[c[0]] != undefined && typeof(p[c[0]]) == "object")
@@ -223,4 +233,4 @@
     }
 //#endregion Vs namespace  --------------------------------------------------------------------------
   
-})();
+})()

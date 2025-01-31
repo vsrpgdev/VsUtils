@@ -1,4 +1,4 @@
-# RPG Maker MZ - VsUtils Plugin - Version: 1.0.0
+# RPG Maker MZ - VsUtils Plugin - Version: 1.1.0
 
 1. [Dependencies](#1-dependencies)
 1. [Installation](#2-installation)
@@ -179,7 +179,7 @@ you can find a demo (without ressources and core script) [here (./demo)](./demo/
   converts a plugin parameter to a javascript object
   Namespace: **VsUtils, Vs.Utils**
   ```javascript
-  static pluginParameterToObject<T>(classType?: new () => T, param: any) : T
+  static pluginParameterToObject<T>(classType?: new () => T, param: any, nullable? :boolean) : T
   ```
   ### Parameters:
   > ### classType T
@@ -187,6 +187,9 @@ you can find a demo (without ressources and core script) [here (./demo)](./demo/
 
   > ### param any
   plugin parameter
+
+  > ### (optinal) nullable boolean
+  is null or undefine allowed
 
   ### return any:
   a javascript object created from the plugin parameter

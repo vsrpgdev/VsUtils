@@ -1,4 +1,4 @@
-# RPG Maker MZ - VsUtils Plugin - Version: 1.1.1
+# RPG Maker MZ - VsUtils Plugin - Version: 1.2.0
 
 1. [Dependencies](#1-dependencies)
 1. [Installation](#2-installation)

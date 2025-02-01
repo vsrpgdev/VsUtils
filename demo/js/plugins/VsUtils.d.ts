@@ -87,8 +87,18 @@ namespace Vs
   namespace System{
     let registerCommandTyped : typeof Vs.plugins.VsUtils.registerCommandTyped;
   }
-}
+  namespace Math{
+    /**
+     * converts degrees to radian
+     */
+    declare function degToRad(degrees:number) : number;
 
+    /**
+     * converts radian to degrees
+     */
+    declare function radToDeg(radians:number) : number;
+  }
+}
 interface Window 
 {
   VsUtils: typeof Vs.plugins.VsUtils;

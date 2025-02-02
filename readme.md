@@ -364,4 +364,4 @@ defines methods which you can call in your plugin or in script commands
 - none
 # 7. Troubleshooting
 # 8. License
-VsUtils by rpgmakerwebthickness467 is marked with CC0 1.0 Universal. To view a copy of this license, visit https://creativecommons.org/publicdomain/zero/1.0/
+VsUtils by vsrpgdev is marked with CC0 1.0 Universal. To view a copy of this license, visit https://creativecommons.org/publicdomain/zero/1.0/

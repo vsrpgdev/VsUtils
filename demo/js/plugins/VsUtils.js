@@ -84,7 +84,7 @@
     static createInstanceFromJson(classType, json)
     {
 
-      if (classType == Number)
+      if (classType == Number || classType == "number")
       {
         try
         {
@@ -97,6 +97,8 @@
           return 0;
         }
       }
+      if (classType == String || classType == "string")
+        return json.toString() ?? json ?? "";
 
       let instance = new classType();
       let obj = this.jsonParseRecursive(json);

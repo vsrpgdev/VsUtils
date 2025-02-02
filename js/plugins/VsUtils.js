@@ -1,7 +1,7 @@
 // #region RPG Maker MZ --------------------------------------------------------------------------
 /*:
  * @target MZ
- * @plugindesc Version 1.2.1 VsUtils, helper methods and other utilities
+ * @plugindesc Version 1.3.0 VsUtils, helper methods and other utilities
  * @author VsRpgDev
  * @url https://github.com/vsrpgdev/VsUtils
  * @help 
@@ -21,7 +21,7 @@
     static get PluginName () {return pluginName}
     
     /**  @type {[number,number,number]} */
-    static get Version () {return [1,2, 1]}
+    static get Version () {return [1,3, 0]}
 
     /**
      * 
@@ -84,7 +84,7 @@
     static createInstanceFromJson(classType, json)
     {
 
-      if (classType == Number)
+      if (classType == Number || classType == "number")
       {
         try
         {
@@ -97,6 +97,8 @@
           return 0;
         }
       }
+      if (classType == String || classType == "string")
+        return json.toString() ?? json ?? "";
 
       let instance = new classType();
       let obj = this.jsonParseRecursive(json);

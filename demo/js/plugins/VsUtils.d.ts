@@ -2,27 +2,35 @@
 namespace Vs
 {
   namespace plugins{
-    declare class VsUtils{
+    declare namespace VsUtils{
+
+      declare class VsInterpreterWaiter
+      {
+        /**
+         * destroys the waiter 
+         */
+        destroy();
+      }
 
       /**
        * 
        * @param json json string
        * @returns returns object
        */
-      static jsonParseRecursive(json: string): any;
+      function jsonParseRecursive(json: string): any;
 
       /**
        * @param instance - Die Instanz, der die Eigenschaften zugewiesen werden.
        * @param obj - Das Objekt mit den zuzuweisenden Werten.
        */
-      static assignObjectEntries(instance: any, obj: any): void;
+      function assignObjectEntries(instance: any, obj: any): void;
 
       /**
        * @param classType
        * @param json 
        * @returns 
        */
-      static createInstanceFromJson<T>(classType: new () => T, json: string): T;
+      function createInstanceFromJson<T>(classType: new () => T, json: string): T;
 
       /**
        * 
@@ -31,7 +39,7 @@ namespace Vs
        * @param nullable 
        * @returns param as json object
        */ 
-      static pluginParameterToObject<T>(classType?: new () => T, param: any, nullable?: boolean) : T
+      function pluginParameterToObject<T>(classType?: new () => T, param: any, nullable?: boolean) : T
 
       /**
        * Creates a proxy for a single instance, ensuring it is of the specified class type.
@@ -41,7 +49,7 @@ namespace Vs
        * @param key - The key under which the instance is stored.
        * @param nullable - allow null as value
        */
-      static instanceProxy<T>(classType: new () => T, obj: Record<string, any>, key: string, nullable? :boolean): void;
+      function instanceProxy<T>(classType: new () => T, obj: Record<string, any>, key: string, nullable? :boolean): void;
 
       /**
        * Creates a proxy for an array-like object, ensuring that all inserted elements
@@ -52,7 +60,7 @@ namespace Vs
        * @param key - The key under which the proxied array is stored.
        * @param nullable - allow null as value
        */
-      static arrayInstanceProxy<T>(classType: { new (): T }, obj: Record<string, any>, key: string, nullable? :boolean): void;
+      function arrayInstanceProxy<T>(classType: { new (): T }, obj: Record<string, any>, key: string, nullable? :boolean): void;
 
 
           
@@ -63,17 +71,43 @@ namespace Vs
        * @param classType class of the parameter
        * @param func The function to execute for the command.
        */
-      static registerCommandTyped<T>(pluginName: string, commandName: string, classType: { new (): T },  func: (args: T) => void): void;
-      
+      function registerCommandTyped<T>(pluginName: string, commandName: string, classType: { new (): T },  func: (args: T) => void): void;
+        
+      /**
+       * check if the property of obj has getter and setter
+       * @param {any} obj 
+       * @param {string} prop 
+       * @returns 
+       */
+      function hasGetterAndSetter(obj: any, prop: string) : boolean;
+
+      /**
+       * Creates a proxy object for target, with the additional properties from additionalValues.
+       * @template T - Source type.
+       * @template U - Extending type.
+       * @param target - Source object.
+       * @param additionalValues - Extending object.
+       * @returns A proxy object combining source and extending type.
+       */
+      function createProxyObj<
+        T extends object, 
+        U extends object & { target: T } = { target: T }
+      >(
+        target: T,
+        additionalValues?: U
+      ): T & Omit<U, "target">;
+
+      function spawnInterpreterWaiter(): Vs.plugins.VsUtils.VsInterpreterWaiter;
+
       /**
        * gets the plugin name
        */
-      static readonly PluginName: string;
+      const PluginName: string;
 
       /**
        * gets the version in major, minor, patch
        */
-      static readonly Version : [number,number,number];
+      const Version : [number,number,number];
     }
   }
   namespace Utils{
@@ -83,9 +117,18 @@ namespace Vs
     let pluginParameterToObject : typeof Vs.plugins.VsUtils.pluginParameterToObject;
     let instanceProxy : typeof Vs.plugins.VsUtils.instanceProxy;
     let arrayInstanceProxy : typeof Vs.plugins.VsUtils.arrayInstanceProxy;
+    let createProxyObj : typeof Vs.plugins.VsUtils.createProxyObj;
+    let hasGetterAndSetter : typeof Vs.plugins.VsUtils.hasGetterAndSetter;
   }
   namespace System{
     let registerCommandTyped : typeof Vs.plugins.VsUtils.registerCommandTyped;
+
+    /**
+     * spawns a new waiter for the interpreter
+     * interpreter is halted until all waiters are destroyed
+     * @returns {Vs.plugins.VsUtils.VsInterpreterWaiter} a new waiter
+     */
+    let spawnInterpreterWaiter: typeof Vs.plugins.VsUtils.spawnInterpreterWaiter;
   }
   namespace Math{
     /**
@@ -102,6 +145,7 @@ namespace Vs
 interface Window 
 {
   VsUtils: typeof Vs.plugins.VsUtils;
+  VsInterpreterWaiter: typeof Vs.plugins.VsInterpreterWaiter;
 }
 
 declare let VsUtils : typeof Vs.plugins.VsUtils;

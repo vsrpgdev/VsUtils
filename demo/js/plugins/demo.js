@@ -164,3 +164,44 @@ Vs.System.registerCommandTyped("demo","testcommand",PLuginArg2, (args) => {
 PluginManager.registerCommandTyped("demo","testcommand",PLuginArg2, (args) => {
   console.log(args.value+" "+args.value2);
 });
+
+
+let tmp2 = {
+  _x:5,
+  get x() {
+    return this._x;
+  },
+  set x (value){
+    this._x=value;
+  },
+
+  noGetter:1
+}
+//true
+console.log(Vs.plugins.VsUtils.hasGetterAndSetter(tmp2,"x"));
+//false
+console.log(Vs.Utils.hasGetterAndSetter(tmp2,"noGetter"));
+//false
+console.log(VsUtils.hasGetterAndSetter(tmp2,"xyz"));
+
+
+let proxy = Vs.plugins.VsUtils.createProxyObj(tmp2,{
+  target: tmp2,
+
+  get z(){
+    return this.target.x*2;
+  },
+  set z(value){
+    this.target.x = value/2;
+  }
+})
+
+//10
+console.log(proxy.z);
+proxy.z = 8;
+//4
+console.log(proxy.x);
+
+let waiter = Vs.System.spawnInterpreterWaiter();
+//interpreter halts until destroy is calld
+waiter.destroy();

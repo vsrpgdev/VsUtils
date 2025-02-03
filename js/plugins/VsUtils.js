@@ -1,7 +1,7 @@
 // #region RPG Maker MZ --------------------------------------------------------------------------
 /*:
  * @target MZ
- * @plugindesc Version 1.3.0 VsUtils, helper methods and other utilities
+ * @plugindesc Version 1.4.0 VsUtils, helper methods and other utilities
  * @author VsRpgDev
  * @url https://github.com/vsrpgdev/VsUtils
  * @help 
@@ -15,13 +15,32 @@
   
   const pluginName = "VsUtils";
 
+
 //#region global Classes --------------------------------------------------------------------------
+  
+  class _VsInterpreterWaiter
+  {
+    #_destroyed = false;
+
+    destroy()
+    {
+      if (this.#_destroyed) return;
+      this.#_destroyed=true;
+
+      // @ts-ignore
+      this.helper?.ReduceCounter();
+    }
+  }
+
   let _vsUtils = class{
     
+
+    static VsInterpreterWaiter = _VsInterpreterWaiter;
+
     static get PluginName () {return pluginName}
     
     /**  @type {[number,number,number]} */
-    static get Version () {return [1,3, 0]}
+    static get Version () {return [1,4, 0]}
 
     /**
      * 
@@ -219,11 +238,73 @@
       });
     }
 
+    /**
+     * 
+     * @param {any} obj 
+     * @param {string} prop 
+     * @returns {boolean}
+     */
+    static hasGetterAndSetter(obj, prop) 
+    {
+      const descriptor = Object.getOwnPropertyDescriptor(obj, prop);
+      
+      return descriptor && typeof descriptor.get === "function" && typeof descriptor.set === "function";
+    }
+
+    /**
+     * creates a proxy object for target, with the additonal properties from additionalValues
+     * @template {object} T - source type
+     * @template  {object & { target: T }}  U - extending type
+     * @param {T} target - source object
+     * @param {U=} [additionalValues] -  extending object
+     * @returns {T & Omit<U, "target">} - proxy object combinding source and extending type
+     */
+    static createProxyObj(target, additionalValues) {
+      
+      // @ts-ignore
+      additionalValues = additionalValues ?? {target:target};
+
+      if (additionalValues["target"] === undefined)
+      {
+        additionalValues["target"] = target;
+      }
+      let keys = Object.entries(additionalValues).filter(p => this.hasGetterAndSetter(additionalValues,p[0])).map(p => p[0]);
+
+      // @ts-ignore
+      return new Proxy(target, {
+        has: (target, p) => {
+
+          keys.includes(p.toString());
+    
+          return p in target;
+        },
+        get: (target, p, receiver) => {
+          
+          if (keys.includes(p.toString())) {
+            // @ts-ignore
+            return Reflect.get(additionalValues, p);
+          }
+    
+          return Reflect.get(target, p);
+        },
+        set: (target, p, value, receiver) => {
+          
+          if (keys.includes(p.toString())) {
+            // @ts-ignore
+            let result = Reflect.set(additionalValues, p, value);
+            return result;
+          }
+    
+          return Reflect.set(target, p, value);
+        }
+      });
+    }
   }
 
   // @ts-ignore
   PluginManager.registerCommandTyped =  _vsUtils.registerCommandTyped;
   window.VsUtils = _vsUtils;
+  window.VsInterpreterWaiter = _VsInterpreterWaiter;
 
 // #endregion -------------------------------------------------------------------------------
 
@@ -235,36 +316,86 @@
   function radToDeg(radians) {
     return radians * (180 / Math.PI);
   }
+
+  class Game_InterpreterWaitHelper
+  {
+    /**@type {number} */
+    static #_counter =0;
+
+    static IncreaseCounter(){
+      this.#_counter++;
+    }
+    static ReduceCounter(){
+      if (this.#_counter > 0)
+        this.#_counter--;
+    }
+
+    static spawnInterpreterWaiter()
+    {
+      this.IncreaseCounter();
+      let waiter = new _VsInterpreterWaiter();
+
+      // @ts-ignore
+      waiter.helper = this;
+
+      return waiter;
+    }
+
+    /**
+     * 
+     * @returns {boolean}
+     */
+    static isBusy()
+    {
+      return this.#_counter > 0;
+    }
+  }
+
+  _vsUtils.spawnInterpreterWaiter = Game_InterpreterWaitHelper.spawnInterpreterWaiter.bind(Game_InterpreterWaitHelper);
 //#endregion internal Classes,Methods and variables ---------------------------------------------------
 
-//#region core script overrides --------------------------------------------------------------------------
+//#region core script overrides ------------------------------------------------------------------------------
+  const Game_Interpreter_prototype_updateWaitMode = Game_Interpreter.prototype.updateWaitMode;
+
+  Game_Interpreter.prototype.updateWaitMode = function()
+  {
+    let result = Game_Interpreter_prototype_updateWaitMode.call(this);
+
+    if (result) return result;
+
+    return Game_InterpreterWaitHelper.isBusy();
+  }
 // #endregion core script overrides --------------------------------------------------------------------------
 
 //#region Vs namespace  --------------------------------------------------------------------------
-    if (Vs.isVsRpgDev)
-    {
-      Vs.plugins.VsUtils = _vsUtils;
-  
-      Vs.Utils={...(Vs.Utils ?? {}),
-        jsonParseRecursive: _vsUtils.jsonParseRecursive,
-        assignObjectEntries: _vsUtils.assignObjectEntries,
-        createInstanceFromJson: _vsUtils.createInstanceFromJson,
-        pluginParameterToObject: _vsUtils.pluginParameterToObject,
-        instanceProxy: _vsUtils.instanceProxy,
-        arrayInstanceProxy: _vsUtils.arrayInstanceProxy
-      };
-      Vs.System={...(Vs.System ?? {}),
-        registerCommandTyped: _vsUtils.registerCommandTyped
-      };
-      Vs.Math={...(Vs.Math ?? {}),
-        degToRad: degToRad,
-        radToDeg: radToDeg
-      };
-    }
-    else
-    {
-      console.error("Vs is already used by another Plugin!!!");
-    }
+  if (Vs.isVsRpgDev)
+  {
+    Vs.plugins.VsUtils = _vsUtils;
+
+    Vs.Utils={...(Vs.Utils ?? {}),
+      jsonParseRecursive: _vsUtils.jsonParseRecursive,
+      assignObjectEntries: _vsUtils.assignObjectEntries,
+      createInstanceFromJson: _vsUtils.createInstanceFromJson,
+      pluginParameterToObject: _vsUtils.pluginParameterToObject,
+      instanceProxy: _vsUtils.instanceProxy,
+      arrayInstanceProxy: _vsUtils.arrayInstanceProxy,
+      createProxyObj: _vsUtils.createProxyObj,
+      hasGetterAndSetter: _vsUtils.hasGetterAndSetter
+    };
+    Vs.System={...(Vs.System ?? {}),
+      registerCommandTyped: _vsUtils.registerCommandTyped,
+      spawnInterpreterWaiter : Game_InterpreterWaitHelper.spawnInterpreterWaiter.bind(Game_InterpreterWaitHelper)
+    };
+    Vs.Math={...(Vs.Math ?? {}),
+      degToRad: degToRad,
+      radToDeg: radToDeg
+    };
+  }
+  else
+  {
+    console.error("Vs is already used by another Plugin!!!");
+  }
 //#endregion Vs namespace  --------------------------------------------------------------------------
   
 })();
+

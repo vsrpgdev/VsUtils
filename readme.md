@@ -1,4 +1,4 @@
-# RPG Maker MZ - VsUtils Plugin - Version: 1.3.0
+# RPG Maker MZ - VsUtils Plugin - Version: 1.4.0
 
 1. [Dependencies](#1-dependencies)
 1. [Installation](#2-installation)
@@ -14,6 +14,9 @@
       - [instanceProxy](#instanceproxy)
       - [arrayInstanceProxy](#arrayinstanceproxy)
       - [registerCommandTyped](#registercommandtyped)
+      - [hasGetterAndSetter](#hasgetterandsetter)
+      - [createProxyObj](#createproxyobj)
+      - [spawnInterpreterWaiter](#spawninterpreterwaiter)
       
 1. [How does the plugin work](#5-how-does-the-plugin-work)
 1. [Changes to the core script](#6-changes-to-the-core-script)
@@ -148,8 +151,10 @@ you can find a demo (without ressources and core script) [here (./demo)](./demo/
   > ### json string
   json string
 
-  ### return T:
+  > ### return T:
   an instance of your class
+  
+  ### examples:
   ```javascript
   class TestPosition
   {
@@ -191,9 +196,10 @@ you can find a demo (without ressources and core script) [here (./demo)](./demo/
   > ### (optinal) nullable boolean
   is null or undefine allowed
 
-  ### return any:
+  > ### return any:
   a javascript object created from the plugin parameter
-
+  
+  ### examples:
   ```javascript
   VsUtils.pluginParameterToObject(TestClass,{position: "{\"x\":\"15\"}"});
   window.VsUtils.pluginParameterToObject(TestClass,{position: "{\"x\":\"15\"}"});
@@ -215,9 +221,10 @@ you can find a demo (without ressources and core script) [here (./demo)](./demo/
   > ### obj any
   the object in which the getter setter should be created
 
-  ### key string:
+  > ### key string:
   key of the new member
 
+  ### examples:
   ```javascript
   class SubClass
   {
@@ -257,9 +264,10 @@ you can find a demo (without ressources and core script) [here (./demo)](./demo/
   > ### obj any
   the object in which the getter setter should be created
 
-  ### key string:
+  > ### key string:
   key of the new member
 
+  ### examples:
   ```javascript
   class SubClass2
   {
@@ -286,7 +294,6 @@ you can find a demo (without ressources and core script) [here (./demo)](./demo/
   ```
 ---
 
-
 - ## registerCommandTyped
   register a plugin command and auto converts it to **classType**
 
@@ -304,9 +311,10 @@ you can find a demo (without ressources and core script) [here (./demo)](./demo/
   > ### classType { new (): T }
   class of your command paramter
 
-  ### func (args: T) => void:
+  > ### func (args: T) => void:
   your callback method
 
+  ### examples:
   ```javascript
   class Item
   {
@@ -356,12 +364,115 @@ you can find a demo (without ressources and core script) [here (./demo)](./demo/
   ```
 ---
 
+- ## hasGetterAndSetter
+  checks if key prop of obj is a property with getter and setter available
+
+  Namespace: **VsUtils, Vs.Utils**
+  ```javascript
+  static hasGetterAndSetter(obj: any, prop: string) : boolean;
+  ```
+  ### Parameters:
+  > ### obj any
+  your object
+
+  > ### prop string
+  property name/key
+
+  > ### return boolean
+  returns the key prop is a property with getter and setter available
+
+  ### examples:
+  ```javascript
+  let tmp = {
+    get x() {
+      return 1;
+    },
+    set x (value){
+    },
+    noGetter:1
+  }
+
+  //true
+  console.log(Vs.plugins.VsUtils.hasGetterAndSetter(tmp,"x"));
+  //false
+  console.log(Vs.Utils.hasGetterAndSetter(tmp,"noGetter"));
+  //false
+  console.log(VsUtils.hasGetterAndSetter(tmp,"xyz"));
+  ```
+---
+
+- ## createProxyObj
+  creats a proxy object for target and extend it with the properties from object additionalValues.
+
+  Namespace: **VsUtils, Vs.Utils**
+  ```javascript
+  static createProxyObj<
+        T extends object, 
+        U extends object & { target: T } = { target: T }
+      >(
+        target: T,
+        additionalValues?: U
+      ): T & Omit<U, "target">;
+  ```
+  ### Parameters:
+  > ### target any
+  your object
+
+  > ### additionalValues obj
+  your extension object for target
+
+  > ### return Proxy
+  returns a proxy object with all members from target and additionalValues
+
+  ### examples:
+  ```javascript
+  let proxy = Vs.plugins.VsUtils.createProxyObj(tmp,{
+    target: tmp,
+
+    get z(){
+      return this.target.x*2;
+    },
+    set z(value){
+      this.target.x = value/2;
+    }
+  })
+
+  //10
+  console.log(proxy.z);
+  proxy.z = 8;
+  //4
+  console.log(proxy.x);
+  ```
+---
+- ## spawnInterpreterWaiter
+  creats a proxy object for target and extend it with the properties from object additionalValues.
+
+  Namespace: **VsUtils, Vs.System**
+  ```javascript
+  static spawnInterpreterWaiter(): Vs.plugins.VsUtils.VsInterpreterWaiter;
+  ```
+  ### return VsInterpreterWaiter
+  returns an interpreter waiter object, which halts the execution of the interpreter until its destroy method gets called.
+  
+  ### examples:
+  ```javascript
+  let waiter = Vs.System.spawnInterpreterWaiter();
+  //interpreter halts until destroy is calld
+  waiter.destroy();
+  ```
+---
 
 
 # 5. How does the plugin work
 defines methods which you can call in your plugin or in script commands
 # 6. Changes to the core script
-- none
+here you can look for possible conflicts with other plugins which change the same files
+  - ## rmmz_objects.js
+    - ### Game_Interpreter 
+      - ### updateWaitMode
+        **method override, orignal gets called**\
+        wait for VsInterpreterWaiter is added
+
 # 7. Troubleshooting
 # 8. License
 VsUtils by vsrpgdev is marked with CC0 1.0 Universal. To view a copy of this license, visit https://creativecommons.org/publicdomain/zero/1.0/

@@ -25189,6 +25189,10 @@ declare namespace PIXI {
               phone: boolean;
           };
       };
+
+      declare type EventListener = (...args: any[]) => void;
+
+
       /**
        * A high performance event emitter
        *
@@ -25197,9 +25201,63 @@ declare namespace PIXI {
        * @memberof PIXI.utils
        * @class EventEmitter
        * @type {EventEmitter}
-       */
-      class EventEmitter {
+       */      
+      declare class EventEmitter 
+      {
+        private _events: Map<string | symbol, EventListener[]>;
+        private _eventsCount: number;
+
+        constructor();
+
+        /**
+         * Returns an array listing the events for which the emitter has registered listeners.
+         */
+        eventNames(): (string | symbol)[];
+
+        /**
+         * Returns the listeners registered for a given event.
+         */
+        listeners(event: string | symbol): EventListener[];
+
+        /**
+         * Returns the number of listeners listening to a given event.
+         */
+        listenerCount(event: string | symbol): number;
+
+        /**
+         * Calls each of the listeners registered for a given event.
+         */
+        emit(event: string | symbol, ...args: any[]): boolean;
+
+        /**
+         * Adds a listener for a given event.
+         */
+        on(event: string | symbol, listener: EventListener, context?: any): this;
+        addListener(event: string | symbol, listener: EventListener, context?: any): this;
+
+        /**
+         * Adds a one-time listener for a given event.
+         */
+        once(event: string | symbol, listener: EventListener, context?: any): this;
+
+        /**
+         * Removes a specific listener from an event.
+         */
+        removeListener(event: string | symbol, listener?: EventListener, context?: any, once?: boolean): this;
+        off(event: string | symbol, listener?: EventListener, context?: any, once?: boolean): this;
+
+        /**
+         * Removes all listeners, or those of the specified event.
+         */
+        removeAllListeners(event?: string | symbol): this;
+
+        /**
+         * EventEmitter can be used as a module namespace.
+         */
+        static EventEmitter: typeof EventEmitter;
       }
+
+
       /**
        * A polygon triangulation library
        *

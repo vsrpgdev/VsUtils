@@ -1,4 +1,4 @@
-declare interface ImageManager {
+declare class ImageManager {
   static iconWidth: number;
   static iconHeight: number;
   static faceWidth: number;

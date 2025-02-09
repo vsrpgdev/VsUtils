@@ -1,4 +1,4 @@
-# RPG Maker MZ - VsUtils Plugin - Version: 1.4.0
+# RPG Maker MZ - VsUtils Plugin - Version: 1.5.0
 
 1. [Dependencies](#1-dependencies)
 1. [Installation](#2-installation)
@@ -6,17 +6,22 @@
     1. [Manual](#22-manual)
 1. [Configuration](#3-configuration)
 1. [Usage](#4-usage)
-    - [Methods](#41-methods)
-      - [jsonParseRecursive](#jsonparserecursive)
-      - [assignObjectEntries](#assignobjectentries)
-      - [createInstanceFromJson](#createinstancefromjson)
-      - [pluginParameterToObject](#pluginparametertoobject)
-      - [instanceProxy](#instanceproxy)
-      - [arrayInstanceProxy](#arrayinstanceproxy)
-      - [registerCommandTyped](#registercommandtyped)
-      - [hasGetterAndSetter](#hasgetterandsetter)
-      - [createProxyObj](#createproxyobj)
-      - [spawnInterpreterWaiter](#spawninterpreterwaiter)
+    1. [Demo](#41-demo)
+    1. [Methods](#42-methods)
+        - [jsonParseRecursive](#jsonparserecursive)
+        - [assignObjectEntries](#assignobjectentries)
+        - [createInstanceFromJson](#createinstancefromjson)
+        - [pluginParameterToObject](#pluginparametertoobject)
+        - [instanceProxy](#instanceproxy)
+        - [arrayInstanceProxy](#arrayinstanceproxy)
+        - [registerCommandTyped](#registercommandtyped)
+        - [hasGetterAndSetter](#hasgetterandsetter)
+        - [createProxyObj](#createproxyobj)
+        - [spawnInterpreterWaiter](#spawninterpreterwaiter)  
+    1. [Plugin Commands](#43-plugin-commands)
+        - [preloadImage](#preloadimage)
+        - [preloadImages](#preloadimages)
+
       
 1. [How does the plugin work](#5-how-does-the-plugin-work)
 1. [Changes to the core script](#6-changes-to-the-core-script)
@@ -25,7 +30,7 @@
 
 this plugin contains multiple utility methods used in my other plugins.
 some of them are
-- a method ro parse json strings recursive (json object which contain other json objects)
+- a method to parse json strings recursive (json object which contain other json objects)
 - a way to register plugin commands in a typed way (define a class for your arguments and auto creates a instance)
 
 # 1. Dependencies
@@ -462,6 +467,24 @@ you can find a demo (without ressources and core script) [here (./demo)](./demo/
   ```
 ---
 
+## 4.3 plugin commands
+
+### `preloadImage`
+**Description:**  preloads an image 
+- **Arguments:**
+  - `image` (string, default: "") path to image
+  - `wait for completion` (boolean, default: false) should the game interpreter be halted until the images is loaded
+  - `throw error` (boolean, default: false) hould and error be trhown if the image couldn't be loaded
+---
+
+### `preloadImages`
+**Description:**  preloads a list of images
+- **Arguments:**
+  - `images` (string[], default: []) list of images
+  - `wait for completion` (boolean, default: false) should the game interpreter be halted until the images is loaded
+  - `throw error` (boolean, default: false) hould and error be trhown if the image couldn't be loaded
+
+---
 
 # 5. How does the plugin work
 defines methods which you can call in your plugin or in script commands
@@ -472,6 +495,19 @@ here you can look for possible conflicts with other plugins which change the sam
       - ### updateWaitMode
         **method override, orignal gets called**\
         wait for VsInterpreterWaiter is added
+  - ## rmz_core.js
+    - ### Bitmap
+      - ### _onError
+        **method override, orignal gets called**
+      - ### addErrorListener
+        **added, if already existing original gets called**
+      - ### _onError
+        **added, if already existing original gets called**
+      - ### _vsCallErrorListeners
+        **added**
+      - ### _vsErrorListeners
+        **added**
+
 
 # 7. Troubleshooting
 # 8. License

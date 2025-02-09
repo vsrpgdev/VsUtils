@@ -73,6 +73,14 @@ namespace Vs
        */
       function registerCommandTyped<T>(pluginName: string, commandName: string, classType: { new (): T },  func: (args: T) => void): void;
         
+
+      /**
+       * Returns all property keys of the object (prototype chain included)
+       * @param obj The object whose properties should be retrieved
+       * @returns An array of property keys
+       */
+      function getAllProperties(obj: any): string[];
+
       /**
        * check if the property of obj has getter and setter
        * @param {any} obj 
@@ -108,6 +116,30 @@ namespace Vs
        * gets the version in major, minor, patch
        */
       const Version : [number,number,number];
+      
+      /**
+       * preloads a image and if waitForCompletion to true halts the game_interpreter until all images are loaded
+       * @param image 
+       * @param waitForCompletion 
+       * @param throwError should a array be thrown if the image couldn't be loaded
+       */
+      function preloadImage(
+        image: string,
+        waitForCompletion: boolean,
+        throwError: boolean
+      ): void;
+    
+      /**
+       * preloads a list of images and if waitForCompletion to true halts the game_interpreter until all images are loaded
+       * @param images 
+       * @param waitForCompletion 
+       * @param throwError should a array be thrown if the image couldn't be loaded
+       */
+      function preloadImages(
+        images: string[],
+        waitForCompletion: boolean,
+        throwError: boolean
+      ): void;
     }
   }
   namespace Utils{
@@ -119,9 +151,13 @@ namespace Vs
     let arrayInstanceProxy : typeof Vs.plugins.VsUtils.arrayInstanceProxy;
     let createProxyObj : typeof Vs.plugins.VsUtils.createProxyObj;
     let hasGetterAndSetter : typeof Vs.plugins.VsUtils.hasGetterAndSetter;
+    let getAllProperties : typeof Vs.plugins.VsUtils.getAllProperties;
+    
   }
   namespace System{
     let registerCommandTyped : typeof Vs.plugins.VsUtils.registerCommandTyped;
+    let preloadImage : typeof Vs.plugins.VsUtils.preloadImage;
+    let preloadImages : typeof Vs.plugins.VsUtils.preloadImages;
 
     /**
      * spawns a new waiter for the interpreter
@@ -149,3 +185,13 @@ interface Window
 }
 
 declare let VsUtils : typeof Vs.plugins.VsUtils;
+
+
+declare interface Bitmap
+{
+  addErrorListener(listener: (bitmap: Bitmap) => void): void;
+
+  _vsErrorListeners : ((bitmap: Bitmap)=>void)[]|undefined;
+
+  _vsCallErrorListeners : () => void;
+}

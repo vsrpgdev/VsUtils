@@ -5,6 +5,41 @@
  * @author VsRpgDev
  * @url https://github.com/vsrpgdev/VsUtils
  * @help 
+ * 
+ * @command preloadImage
+ * @text preload image
+ * @desc preloads an image 
+ * @arg image
+ * @default ""
+ * @type string
+ * @arg waitForCompletion
+ * @text wait for completion
+ * @desc should the game interpreter be halted until the images is loaded
+ * @default false
+ * @type boolean
+ * @arg throwError
+ * @text throw error
+ * @desc should and error be trhown if the image couldn't be loaded
+ * @default false
+ * @type boolean
+ * 
+ * @command preloadImages
+ * @text preload images
+ * @desc preloads a list of images
+ * @arg images
+ * @default []
+ * @type string[]
+ * @arg waitForCompletion
+ * @text wait for completion
+ * @desc should the game interpreter be halted until the images is loaded
+ * @default false
+ * @type boolean
+ * @arg throwError
+ * @text throw error
+ * @desc should and error be trhown if the image couldn't be loaded
+ * @default false
+ * @type boolean
+ * 
 */
 //#endregion --------------------------------------------------------------------------
 
@@ -40,7 +75,7 @@
     static get PluginName () {return pluginName}
     
     /**  @type {[number,number,number]} */
-    static get Version () {return [1,4, 0]}
+    static get Version () {return [1,5, 0]}
 
     /**
      * 
@@ -238,6 +273,34 @@
       });
     }
 
+
+    /**
+     * returns all property keys of the object (prototype chain included)
+     * @param {any} obj 
+     * @returns {string[]} property keys
+     */
+    static getAllProperties(obj) 
+    {
+      if (obj == undefined) return [];
+      if (typeof obj != "object") return [];
+
+      let properties = new Set();
+      let proto = obj;
+  
+      while (proto && proto !== Object.prototype) {
+        Object.getOwnPropertyNames(proto).forEach(prop => {
+          
+          if (!this.hasGetterAndSetter(proto,prop))
+          return;
+          if (!properties.has(prop)) {
+              properties.add(prop);
+          }
+        });
+        proto = Object.getPrototypeOf(proto);
+      }
+      return Array.from(properties);
+    }
+
     /**
      * 
      * @param {any} obj 
@@ -268,7 +331,7 @@
       {
         additionalValues["target"] = target;
       }
-      let keys = Object.entries(additionalValues).filter(p => this.hasGetterAndSetter(additionalValues,p[0])).map(p => p[0]);
+      let keys = _vsUtils.getAllProperties(additionalValues);
 
       // @ts-ignore
       return new Proxy(target, {
@@ -299,7 +362,44 @@
         }
       });
     }
+
+    /**
+     * 
+     * @param {string} image 
+     * @param {boolean} waitForCompletion 
+     * @param {boolean} throwError 
+     */
+    static preloadImage(image, waitForCompletion, throwError)
+    {
+      const bitmap = ImageManager.loadPicture(image);
+
+      if (bitmap.isReady() || bitmap.isError())
+        return;
+
+      /**
+       * @type {Vs.plugins.VsUtils.VsInterpreterWaiter}
+       */
+      let waiter = undefined;
+      if (waitForCompletion)
+        waiter = Vs.System.spawnInterpreterWaiter();
+
+      bitmap.addLoadListener(() => {
+        waiter?.destroy();
+      });
+      bitmap.addErrorListener((bitmap) => {
+        waiter?.destroy();
+        if (throwError)
+          Graphics.printError("Failed to load:",bitmap.url);
+      });
+    }
+    static preloadImages(images, waitForCompletion, throwError)
+    {
+      images.forEach(i => {
+        _vsUtils.preloadImage(i,waitForCompletion,throwError);
+      })
+    }
   }
+  
 
   // @ts-ignore
   PluginManager.registerCommandTyped =  _vsUtils.registerCommandTyped;
@@ -323,20 +423,20 @@
     static #_counter =0;
 
     static IncreaseCounter(){
-      this.#_counter++;
+      Game_InterpreterWaitHelper.#_counter++;
     }
     static ReduceCounter(){
-      if (this.#_counter > 0)
-        this.#_counter--;
+      if (Game_InterpreterWaitHelper.#_counter > 0)
+        Game_InterpreterWaitHelper.#_counter--;
     }
 
     static spawnInterpreterWaiter()
     {
-      this.IncreaseCounter();
+      Game_InterpreterWaitHelper.IncreaseCounter();
       let waiter = new _VsInterpreterWaiter();
 
       // @ts-ignore
-      waiter.helper = this;
+      waiter.helper = Game_InterpreterWaitHelper;
 
       return waiter;
     }
@@ -347,11 +447,45 @@
      */
     static isBusy()
     {
-      return this.#_counter > 0;
+      return Game_InterpreterWaitHelper.#_counter > 0;
     }
   }
 
   _vsUtils.spawnInterpreterWaiter = Game_InterpreterWaitHelper.spawnInterpreterWaiter.bind(Game_InterpreterWaitHelper);
+
+  
+  class PreloadImageArgs
+  {
+    /**@type {string} */
+    image = ""; 
+
+    /**@type {boolean} */
+    waitForCompletion = false; 
+
+    /**@type {boolean} */
+    throwError = false; 
+
+  }
+  _vsUtils.registerCommandTyped(pluginName, 'preloadImage',PreloadImageArgs, args => {
+    _vsUtils.preloadImage(args.image,args.waitForCompletion,args.throwError);
+  });
+  class PreloadImagesArgs
+  {
+    /**@type {string[]} */
+    images = []; 
+
+    /**@type {boolean} */
+    waitForCompletion = false; 
+
+    /**@type {boolean} */
+    throwError = false; 
+
+  }
+  _vsUtils.registerCommandTyped(pluginName, 'preloadImages',PreloadImagesArgs, args => {
+    _vsUtils.preloadImages(args.images,args.waitForCompletion,args.throwError);
+  });
+
+
 //#endregion internal Classes,Methods and variables ---------------------------------------------------
 
 //#region core script overrides ------------------------------------------------------------------------------
@@ -365,6 +499,50 @@
 
     return Game_InterpreterWaitHelper.isBusy();
   }
+
+  /**
+   * Adds a callback function that will be called when the bitmap is loaded.
+   *
+   * @param {(bitmap:Bitmap)=>void} listner - The callback function.
+   */
+  let Bitmap_prototype_addErrorListener = Bitmap.prototype.addErrorListener;
+  Bitmap.prototype.addErrorListener = function(listner) {
+      if (!this.isError()) {
+          if (this._vsErrorListeners == undefined) 
+            this._vsErrorListeners = [];
+
+          this._vsErrorListeners.push(listner);
+      } else {
+          listner(this);
+      }
+      if (Bitmap_prototype_addErrorListener)
+        Bitmap_prototype_addErrorListener?.call(this,...arguments);
+  };
+
+  
+  // @ts-ignore
+  let Bitmap_prototype__onError = Bitmap.prototype._onError;
+  // @ts-ignore
+  Bitmap.prototype._onError = function() {
+    Bitmap_prototype__onError.call(this);
+    
+    this._vsCallErrorListeners();
+  };
+    
+  let Bitmap_prototype__callErrorListeners = Bitmap.prototype._vsCallErrorListeners;
+  Bitmap.prototype._vsCallErrorListeners = function() {
+    if (Bitmap_prototype__callErrorListeners)
+      Bitmap_prototype__callErrorListeners.call(this);
+
+    if (this._vsErrorListeners == undefined) 
+      return;
+    
+    while (this._vsErrorListeners.length > 0) {
+        const listener = this._vsErrorListeners.shift();
+        listener(this);
+    }
+  };
+
 // #endregion core script overrides --------------------------------------------------------------------------
 
 //#region Vs namespace  --------------------------------------------------------------------------
@@ -380,12 +558,16 @@
       instanceProxy: _vsUtils.instanceProxy,
       arrayInstanceProxy: _vsUtils.arrayInstanceProxy,
       createProxyObj: _vsUtils.createProxyObj,
-      hasGetterAndSetter: _vsUtils.hasGetterAndSetter
+      hasGetterAndSetter: _vsUtils.hasGetterAndSetter,
+      getAllProperties: _vsUtils.getAllProperties
     };
+
     Vs.System={...(Vs.System ?? {}),
       registerCommandTyped: _vsUtils.registerCommandTyped,
-      spawnInterpreterWaiter : Game_InterpreterWaitHelper.spawnInterpreterWaiter.bind(Game_InterpreterWaitHelper)
-    };
+      spawnInterpreterWaiter : Game_InterpreterWaitHelper.spawnInterpreterWaiter.bind(Game_InterpreterWaitHelper),
+      preloadImage: _vsUtils.preloadImage,
+      preloadImages: _vsUtils.preloadImages
+    }; 
     Vs.Math={...(Vs.Math ?? {}),
       degToRad: degToRad,
       radToDeg: radToDeg

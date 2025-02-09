@@ -577,4 +577,7 @@
   {
     console.error("Vs is already used by another Plugin!!!");
   }
-//#endregion Vs namespace  -
+//#endregion Vs namespace  --------------------------------------------------------------------------
+  
+})();
+

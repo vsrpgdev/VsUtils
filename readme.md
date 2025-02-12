@@ -1,4 +1,4 @@
-# RPG Maker MZ - VsUtils Plugin - Version: 1.5.0
+# RPG Maker MZ - VsUtils Plugin - Version: 1.6.0
 
 1. [Dependencies](#1-dependencies)
 1. [Installation](#2-installation)
@@ -14,9 +14,12 @@
         - [pluginParameterToObject](#pluginparametertoobject)
         - [instanceProxy](#instanceproxy)
         - [arrayInstanceProxy](#arrayinstanceproxy)
+        - [dictionaryInstanceProxy](#dictionaryinstanceproxy)
         - [registerCommandTyped](#registercommandtyped)
         - [hasGetterAndSetter](#hasgetterandsetter)
         - [createProxyObj](#createproxyobj)
+        - [RegisterAdditionalFile](#registeradditionalfile)
+        
         - [spawnInterpreterWaiter](#spawninterpreterwaiter)  
     1. [Plugin Commands](#43-plugin-commands)
         - [preloadImage](#preloadimage)
@@ -299,6 +302,49 @@ you can find a demo (without ressources and core script) [here (./demo)](./demo/
   ```
 ---
 
+- ## dictionaryInstanceProxy
+  creates a proxy for a getter, setter member which ensures the type to be classType 
+  Namespace: **VsUtils, Vs.Utils**
+  ```javascript
+  static dictionaryInstanceProxy<T>(classType: { new (): T }, obj: Record<string, any>, key: string, nullable? :boolean): void;
+  ```
+  ### Parameters:
+  > ### classType T
+  the class you whant to create an instance of or null
+
+  > ### obj any
+  the object in which the getter setter should be created
+
+  > ### key string:
+  key of the new member
+
+  ### examples:
+  ```javascript
+  class SubClass2
+  {
+    constructor()
+    {
+      console.log("hello world");
+    }
+    name = "test"
+  }
+  class InstanceClass2
+  {
+    constructor()
+    {
+      VsUtils.arrayInstanceProxy(SubClass,this,"sub");
+      window.VsUtils.arrayInstanceProxy(SubClass,this,"sub2");
+      Vs.plugins.VsUtils.arrayInstanceProxy(SubClass,this,"sub3");
+      Vs.Utils.arrayInstanceProxy(SubClass,this,"sub4");
+    }
+    sub = {};
+    sub2 = {};
+    sub3 = {};
+    sub34 = {};
+  }
+  ```
+---
+
 - ## registerCommandTyped
   register a plugin command and auto converts it to **classType**
 
@@ -449,6 +495,28 @@ you can find a demo (without ressources and core script) [here (./demo)](./demo/
   console.log(proxy.x);
   ```
 ---
+
+- ## RegisterAdditionalFile
+  register an additional data file for your plugin
+
+  Namespace: **VsUtils, Vs.Utils**
+  ```javascript
+  function RegisterAdditionalFile(fileName:string, loaded:(datas:string)=>void, error:()=>void, optional:boolean);
+  ```
+  ### Parameters:
+  > ### fileName string
+  filename and path
+
+  > ### loaded (data)=>void
+  callback method when file is loaded
+
+  > ### error ()=>void
+  callback method when file couldn't be loaded
+
+  > ### optional boolean
+  file is optional, no error when missing
+---
+
 - ## spawnInterpreterWaiter
   creats a proxy object for target and extend it with the properties from object additionalValues.
 
@@ -485,6 +553,7 @@ you can find a demo (without ressources and core script) [here (./demo)](./demo/
   - `throw error` (boolean, default: false) hould and error be trhown if the image couldn't be loaded
 
 ---
+
 
 # 5. How does the plugin work
 defines methods which you can call in your plugin or in script commands

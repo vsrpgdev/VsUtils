@@ -60,8 +60,18 @@ namespace Vs
        * @param key - The key under which the proxied array is stored.
        * @param nullable - allow null as value
        */
-      function arrayInstanceProxy<T>(classType: { new (): T }, obj: Record<string, any>, key: string, nullable? :boolean): void;
+      function arrayInstanceProxy<T>(classType: { new (): T }|"string"|"number"|"any", obj: Record<string, any>, key: string, nullable? :boolean): void;
 
+      /**
+       * Creates a proxy for an dictionary-like object, ensuring that all inserted elements
+       * are instances of a specified class.
+       *
+       * @param classType - The class type used for new elements.
+       * @param obj - The object in which the proxy is stored.
+       * @param key - The key under which the proxied array is stored.
+       * @param nullable - allow null as value
+       */
+      function dictionaryInstanceProxy<T>(classType: { new (): T }|"string"|"number"|"any", obj: Record<string, any>, key: string, nullable? :boolean): void;
 
           
       /**
@@ -140,6 +150,16 @@ namespace Vs
         waitForCompletion: boolean,
         throwError: boolean
       ): void;
+
+      
+      /**
+       * 
+       * @param {string} fileName 
+       * @param {(data)=>void} loaded 
+       * @param {(error)=>void} error 
+        * @param {boolean} optional 
+      */
+      function RegisterAdditionalFile(fileName:string, loaded:(datas:string)=>void, error:()=>void, optional:boolean);
     }
   }
   namespace Utils{
@@ -149,6 +169,7 @@ namespace Vs
     let pluginParameterToObject : typeof Vs.plugins.VsUtils.pluginParameterToObject;
     let instanceProxy : typeof Vs.plugins.VsUtils.instanceProxy;
     let arrayInstanceProxy : typeof Vs.plugins.VsUtils.arrayInstanceProxy;
+    let dictionaryInstanceProxy : typeof Vs.plugins.VsUtils.dictionaryInstanceProxy;
     let createProxyObj : typeof Vs.plugins.VsUtils.createProxyObj;
     let hasGetterAndSetter : typeof Vs.plugins.VsUtils.hasGetterAndSetter;
     let getAllProperties : typeof Vs.plugins.VsUtils.getAllProperties;
@@ -158,6 +179,7 @@ namespace Vs
     let registerCommandTyped : typeof Vs.plugins.VsUtils.registerCommandTyped;
     let preloadImage : typeof Vs.plugins.VsUtils.preloadImage;
     let preloadImages : typeof Vs.plugins.VsUtils.preloadImages;
+    let RegisterAdditionalFile: typeof Vs.plugins.VsUtils.RegisterAdditionalFile;
 
     /**
      * spawns a new waiter for the interpreter

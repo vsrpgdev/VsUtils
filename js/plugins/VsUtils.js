@@ -1,7 +1,7 @@
 // #region RPG Maker MZ --------------------------------------------------------------------------
 /*:
  * @target MZ
- * @plugindesc Version 1.5.0 VsUtils, helper methods and other utilities
+ * @plugindesc Version 1.6.0 VsUtils, helper methods and other utilities
  * @author VsRpgDev
  * @url https://github.com/vsrpgdev/VsUtils
  * @help 
@@ -75,7 +75,7 @@
     static get PluginName () {return pluginName}
     
     /**  @type {[number,number,number]} */
-    static get Version () {return [1,5, 0]}
+    static get Version () {return [1,6, 0]}
 
     /**
      * 
@@ -97,6 +97,7 @@
         return data;
       }
       catch{
+        if (typeof json != "string") return json;
         let result = Vs.Utils.convertEscapeCharacters(json);
         try
         {
@@ -119,6 +120,8 @@
       if (typeof(obj) != "object" )
         return;
       if (typeof(instance) != "object" )
+        return;
+      if (obj == null)
         return;
 
       Object.entries(obj).forEach((key)=> {
@@ -217,18 +220,22 @@
         }
       }
       
+      let oldValue = obj[key];
+      delete obj[key];
       Object.defineProperty(obj, key, {
         get: getter,
         set: setter,
-        configurable: false,
+        configurable: true,
         enumerable: true
       });
+
+      obj[key] = oldValue;
     }
 
     /**
      * Creates a proxy for a single instance, ensuring it is of the specified class type.
      *
-     * @param classType - The class type used for the instance.
+     * @param {any} classType - The class type used for the instance.
      * @param obj - The object in which the instance is stored.
      * @param key - The key under which the instance is stored.
      * @param {boolean} [nullable] , is the variable nullable
@@ -249,20 +256,115 @@
             {
               return Reflect.set(target, prop, null, receiver);
             }
+            if (classType == "number")
+            {
+              return Reflect.set(target, prop, Number(value), receiver);
+            }
+            if (classType == "string")
+            {
+              return Reflect.set(target, prop, (value??"").toString(), receiver);
+            }
+            if (classType == "any")
+            {
+              return Reflect.set(target, prop, value, receiver);
+            }
             let newC = new classType();
             this.assignObjectEntries(newC,value);
             return Reflect.set(target, prop, newC, receiver);
           }
           return  Reflect.set(target, prop, value, receiver);
-        },
+        }
       });
-    
+
+      let oldValue = obj[key];
+      delete obj[key];
       Object.defineProperty(obj, key, {
-        value: proxy,
-        writable: false, 
-        configurable: false, 
-        enumerable: true
+        get:()=>{return proxy},
+        set:(value)=>{
+          if(!Array.isArray(value))
+          {
+            console.error("dictionaryInstanceProxy: Array expected but "+typeof(value)+" found");
+            value ={};
+          }
+          proxy.splice(0, proxy.length);
+          
+          value.forEach((a,i) => {
+            proxy[i] = a;
+          });
+        },
+        configurable: true, 
+        enumerable: true,
       });
+
+      obj[key] =oldValue;
+    }
+
+    /**
+     * Creates a proxy for a single instance, ensuring it is of the specified class type.
+     *
+     * @param {any} classType - The class type used for the instance.
+     * @param obj - The object in which the instance is stored.
+     * @param key - The key under which the instance is stored.
+     * @param {boolean} [nullable] , is the variable nullable
+     */
+    static dictionaryInstanceProxy(classType,obj, key,nullable)
+    {
+      let oldValue = null;
+
+      let creatProxy = ()=>{
+        oldValue = obj[key];
+        if (nullable == undefined) nullable = false;
+        let privateData = {};
+      
+        let proxy = new Proxy(privateData,{
+          get: (target, prop, receiver) => {
+            return Reflect.get(target, prop, receiver);
+          },
+          set: (target, prop, value, receiver) => {
+          
+            if (nullable && value == null)
+            {
+              return Reflect.set(target, prop, null, receiver);
+            }
+            if (classType == "number")
+            {
+              return Reflect.set(target, prop, Number(value), receiver);
+            }
+            if (classType == "string")
+            {
+              return Reflect.set(target, prop, (value??"").toString(), receiver);
+            }
+            if (classType == "any")
+            {
+              return Reflect.set(target, prop, value, receiver);
+            }
+            let newC = new classType();
+            this.assignObjectEntries(newC,value);
+            return Reflect.set(target, prop, newC, receiver);
+          }
+        });
+        
+        delete obj[key];
+        Object.defineProperty(obj, key, {
+          get:()=>{return proxy},
+          set:(value)=>{
+            if(typeof value != "object") 
+            {
+              console.error("dictionaryInstanceProxy: Object expected but "+typeof(value)+" found");
+              value ={};
+            }
+            creatProxy();
+            
+            Object.entries(value).forEach(entry => {
+              proxy[entry[0]] = entry[1];
+            });
+          },
+          configurable: true,
+          enumerable: true
+        });
+      };
+      creatProxy();
+      obj[key]=oldValue;
     }
 
     
@@ -397,6 +499,18 @@
       images.forEach(i => {
         _vsUtils.preloadImage(i,waitForCompletion,throwError);
       })
+    }
+    
+    /**
+     * 
+     * @param {string} fileName 
+     * @param {(data)=>void} loaded 
+     * @param {()=>void} error 
+      * @param {boolean} optional 
+     */
+    static RegisterAdditionalFile(fileName, loaded, error, optional)
+    {
+      _registerAdditionalFile(fileName,loaded,error, optional);
     }
   }
   
@@ -543,6 +657,72 @@
     }
   };
 
+  /**@type {{name:string, loaded:(data)=>void,error:()=>void, optional:boolean}[]} */
+  let _additionalFiles = []
+
+
+  /**
+   * 
+   * @param {string} filename 
+   * @param {(data)=>void} loaded 
+   * @param {()=>void} error 
+   * @param {boolean} optional 
+   */
+  function _registerAdditionalFile(filename,loaded,error, optional)
+  {
+    // @ts-ignore
+    if(DataManager._databaseFiles.some(f => f.name == filename))
+      Graphics.printError("registerAdditionalFile","file '"+filename+"' is already in use");
+
+    _additionalFiles.push({
+      name:filename,
+      loaded:loaded,
+      error:error,
+      optional:optional
+    })
+    // @ts-ignore
+    DataManager._databaseFiles.push({name:filename,src:filename+".json"});
+  }
+  
+  let DataManager_onXhrError = DataManager.onXhrError;
+  DataManager.onXhrError = function(name, src, url) {
+    
+    let found = _additionalFiles.find(a => a.name == name);
+    if (found)
+    {
+      found.error();
+      if (found.optional)
+      {
+        window[name] = [];
+        return;
+      } 
+    }
+    DataManager_onXhrError.call(this,name,screen,url);
+  };
+
+  let DataManager_onXhrLoad = DataManager.onXhrLoad;
+  DataManager.onXhrLoad = function(xhr, name, src, url) {
+    
+    let found = _additionalFiles.find(a => a.name == name);
+    if (found)
+    {
+      if (xhr.status >= 200 && xhr.status <= 299)
+      {
+        let result = DataManager_onXhrLoad.call(this, xhr, name, src, url);
+        found.loaded(window[name]);
+        return result;
+      }
+      else
+      {
+        found.error();
+      }
+    }
+
+    
+    return DataManager_onXhrLoad.call(this, xhr, name, src, url);
+  };
+  
+ 
 // #endregion core script overrides --------------------------------------------------------------------------
 
 //#region Vs namespace  --------------------------------------------------------------------------
@@ -557,6 +737,7 @@
       pluginParameterToObject: _vsUtils.pluginParameterToObject,
       instanceProxy: _vsUtils.instanceProxy,
       arrayInstanceProxy: _vsUtils.arrayInstanceProxy,
+      dictionaryInstanceProxy : _vsUtils.dictionaryInstanceProxy,
       createProxyObj: _vsUtils.createProxyObj,
       hasGetterAndSetter: _vsUtils.hasGetterAndSetter,
       getAllProperties: _vsUtils.getAllProperties
@@ -566,7 +747,8 @@
       registerCommandTyped: _vsUtils.registerCommandTyped,
       spawnInterpreterWaiter : Game_InterpreterWaitHelper.spawnInterpreterWaiter.bind(Game_InterpreterWaitHelper),
       preloadImage: _vsUtils.preloadImage,
-      preloadImages: _vsUtils.preloadImages
+      preloadImages: _vsUtils.preloadImages,
+      RegisterAdditionalFile: _vsUtils.RegisterAdditionalFile,
     }; 
     Vs.Math={...(Vs.Math ?? {}),
       degToRad: degToRad,
